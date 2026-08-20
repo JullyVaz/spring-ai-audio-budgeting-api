@@ -84,17 +84,17 @@ src/main/java/dio/budgeting
     ├── http
     ├── persistence
     └── ...
-Domain
+## Domain
 
 Contém as entidades, regras e abstrações relacionadas ao domínio financeiro.
 
-Application
+## Application
 
 Contém os casos de uso da aplicação.
 
 Os casos de uso podem ser utilizados tanto pelos endpoints REST tradicionais quanto pelo mecanismo de Tool Calling do Spring AI.
 
-Infrastructure
+## Infrastructure
 
 Responsável pelas integrações externas e adaptadores, incluindo:
 
@@ -103,7 +103,7 @@ persistência;
 integração com OpenAI;
 processamento de áudio.
 Integração com Spring AI
-1. Speech-to-Text
+# 1. Speech-to-Text
 
 O áudio enviado pelo usuário é processado utilizando:
 
@@ -113,16 +113,13 @@ A aplicação utiliza o modelo Whisper para transformar o áudio em texto.
 
 Exemplo:
 
-Áudio:
+## Áudio:
 "Gastei 50 reais no mercado."
-
-
         ↓
-
-
-Transcrição:
+## Transcrição:
 "Gastei R$ 50,00 no mercado."
-2. ChatClient
+
+# 2. ChatClient
 
 Após a transcrição, o texto é enviado ao ChatClient do Spring AI:
 
@@ -151,7 +148,7 @@ Por exemplo, ao receber:
 
 a IA pode identificar a intenção de registrar uma nova transação e utilizar o caso de uso responsável pela persistência.
 
-4. Text-to-Speech
+# 4. Text-to-Speech
 
 Após o processamento da solicitação, a resposta textual da IA é convertida novamente para áudio:
 
@@ -205,22 +202,23 @@ Evidências dos testes
 As evidências dos testes estão disponíveis no diretório:
 
 docs/evidencias/
-1. Teste com áudio válido
+
+# 1. Teste com áudio válido
 
 Demonstra o envio do arquivo de áudio para o endpoint.
 
-2. Resposta de áudio gerada
+# 2. Resposta de áudio gerada
 
 Demonstra a geração do arquivo resposta.mp3.
 
-3. Resposta HTTP 200
+# 3. Resposta HTTP 200
 
 Demonstra o processamento bem-sucedido da requisição e o retorno do áudio:
 
 HTTP/1.1 200
 Content-Type: audio/mp3
 
-4. Validação HTTP 415
+# 4. Validação HTTP 415
 
 Demonstra a rejeição de uma requisição enviada com tipo de conteúdo incompatível.
 
