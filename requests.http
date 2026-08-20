@@ -1,0 +1,18 @@
+### Criar transação
+POST http://localhost:8080/transactions
+Content-Type: application/json
+
+{
+  "description": "Compra no supermercado",
+  "category": "GROCERIES",
+  "amount": 5000
+}
+
+### Consultar transações de supermercado
+GET http://localhost:8080/transactions/GROCERIES
+
+### Testar transação por áudio
+POST http://localhost:8080/transactions/ai
+Content-Type: multipart/form-data
+
+file=@gasto.mp3.m4as
