@@ -1,302 +1,257 @@
 # Spring AI - API Inteligente de Controle Financeiro
 
-API desenvolvida em **Java com Spring Boot e Spring AI** para registro de transações financeiras por meio de comandos de voz.
+API desenvolvida em Java, Spring Boot e Spring AI para registro de transações financeiras por meio de comandos de voz.
 
-O projeto foi desenvolvido como parte do desafio final do módulo de **Spring AI do Bootcamp Santander 1º Semestre de 2026**, utilizando arquitetura em camadas e integração com modelos da OpenAI.
+Projeto desenvolvido como parte do desafio final do módulo de Spring AI do Bootcamp Santander 1º Semestre de 2026.
 
 ---
 
 ## Objetivo
 
-O objetivo do projeto é permitir que o usuário registre uma transação financeira utilizando linguagem natural por meio de um arquivo de áudio.
+Permitir o registro de transações financeiras utilizando comandos de voz.
 
-Por exemplo, o usuário pode enviar um áudio dizendo:
-
-> "Gastei 50 reais no mercado."
-
-A aplicação realiza automaticamente o seguinte processamento:
-
-**Áudio → Transcrição → IA → Tool Calling → Caso de Uso → Persistência → Resposta em áudio**
-
----
-
-## Fluxo da aplicação
-
-```text
-Cliente
-  │
-  │ Arquivo de áudio
-  ▼
-Spring Boot API
-POST /transactions/ai
-  │
-  ▼
-Speech-to-Text
-OpenAI Whisper
-  │
-  ▼
-ChatClient
-Spring AI
-  │
-  ▼
-Tool Calling
-Casos de uso da aplicação
-  │
-  ▼
-Persistência / Consulta
-de transações
-  │
-  ▼
-Text-to-Speech
-OpenAI
-  │
-  ▼
-Áudio MP3
-
-Tecnologias utilizadas
-Java 25
-Spring Boot 4
-Spring AI 2.0.0-M4
-Spring Web
-Spring Data JPA
-MySQL
-OpenAI API
-Whisper - Speech-to-Text
-OpenAI Text-to-Speech
-Gradle
-Docker Compose
-REST API
-Arquitetura
-
-O projeto mantém uma separação entre domínio, aplicação e infraestrutura.
-
-src/main/java/dio/budgeting
-│
-├── domain
-│   ├── model
-│   └── repository
-│
-├── application
-│   ├── PersistTransactionUseCase
-│   └── ListTransactionsByCategoryUseCase
-│
-└── infrastructure
-    ├── http
-    ├── persistence
-    └── ...
-## Domain
-
-Contém as entidades, regras e abstrações relacionadas ao domínio financeiro.
-
-## Application
-
-Contém os casos de uso da aplicação.
-
-Os casos de uso podem ser utilizados tanto pelos endpoints REST tradicionais quanto pelo mecanismo de Tool Calling do Spring AI.
-
-## Infrastructure
-
-Responsável pelas integrações externas e adaptadores, incluindo:
-
-API HTTP;
-persistência;
-integração com OpenAI;
-processamento de áudio.
-Integração com Spring AI
-# 1. Speech-to-Text
-
-O áudio enviado pelo usuário é processado utilizando:
-
-TranscriptionModel
-
-A aplicação utiliza o modelo Whisper para transformar o áudio em texto.
+O usuário envia um áudio, que é transcrito e interpretado pela Inteligência Artificial. A aplicação utiliza Tool Calling para acionar os casos de uso responsáveis pelo processamento da transação e, ao final, gera uma resposta em áudio.
 
 Exemplo:
 
-## Áudio:
-"Gastei 50 reais no mercado."
-        ↓
-## Transcrição:
 "Gastei R$ 50,00 no mercado."
 
-# 2. ChatClient
+Fluxo principal:
 
-Após a transcrição, o texto é enviado ao ChatClient do Spring AI:
+Áudio → Speech-to-Text → ChatClient → Tool Calling → Caso de Uso → Persistência → Text-to-Speech → Áudio MP3
 
-var result = chatClient
-        .prompt()
-        .user(userMessage)
-        .call()
-        .content();
+---
 
-O modelo interpreta a solicitação e identifica qual ação deve ser realizada.
+## Recursos de Inteligência Artificial
 
-3. Tool Calling
+- Speech-to-Text: conversão do áudio em texto utilizando TranscriptionModel.
+- ChatClient: processamento da solicitação utilizando Spring AI.
+- Tool Calling: acionamento dos casos de uso da aplicação a partir da interpretação da IA.
+- Text-to-Speech: conversão da resposta final em áudio utilizando TextToSpeechModel.
 
-Os casos de uso da aplicação são registrados como ferramentas disponíveis para o modelo:
+---
 
-.defaultTools(
-    persistTransactionUseCase,
-    listTransactionsByCategoryUseCase
-)
+## Arquitetura
 
-Dessa forma, a IA pode utilizar funcionalidades reais da aplicação em vez de apenas gerar uma resposta textual.
+O projeto utiliza arquitetura em camadas, mantendo a separação entre domínio, aplicação e infraestrutura.
 
-Por exemplo, ao receber:
+src/main/java/dio/budgeting
 
-"Gastei 50 reais no mercado."
+├── domain
+├── application
+└── infrastructure
 
-a IA pode identificar a intenção de registrar uma nova transação e utilizar o caso de uso responsável pela persistência.
+Os casos de uso são reutilizados tanto pelos endpoints REST quanto pelo mecanismo de Tool Calling, mantendo as regras de negócio independentes da integração com a IA.
 
-# 4. Text-to-Speech
+---
 
-Após o processamento da solicitação, a resposta textual da IA é convertida novamente para áudio:
+## Melhoria implementada
 
-byte[] audio = textToSpeechModel.call(result);
+Além da implementação do fluxo de Speech-to-Text, Tool Calling e Text-to-Speech, foi implementada uma melhoria no endpoint /transactions/ai para aumentar a robustez da API.
 
-O endpoint retorna o resultado no formato:
+### Validação do tipo de mídia
 
-audio/mp3
-Endpoint de IA
-POST
-/transactions/ai
-Content-Type
-multipart/form-data
-Parâmetro
-file
+O endpoint passou a validar o tipo de conteúdo recebido antes de realizar o processamento do áudio.
 
-Exemplo utilizando curl:
-
-curl.exe -X POST `
-  -F "file=@gasto.mp3.m4a" `
-  http://localhost:8080/transactions/ai `
-  -o resposta.mp3
-
-A resposta é um arquivo de áudio MP3.
-
-Endpoints de transações
-Criar transação
-POST /transactions
-Listar transações por categoria
-GET /transactions/{category}
-Tratamento de requisições inválidas
-
-Durante o desenvolvimento, também foram realizados testes de validação do endpoint.
-
-HTTP 400 - Bad Request
-
-O endpoint rejeita uma requisição inválida quando os dados enviados não podem ser processados corretamente.
+Quando é enviada uma requisição com formato de mídia não suportado, a API retorna:
 
 HTTP 415 - Unsupported Media Type
 
-O endpoint também valida o tipo de conteúdo recebido.
+Essa melhoria contribui para:
 
-Durante os testes foi possível obter:
+- maior robustez da API;
+- validação das entradas;
+- redução de chamadas inválidas ao serviço de IA;
+- tratamento mais adequado de erros HTTP.
 
-HTTP/1.1 415
+A validação foi testada e registrada nas evidências do projeto.
 
-Esse comportamento demonstra a validação do formato de requisição esperado pelo endpoint.
+---
 
-Evidências dos testes
+## Evidências
 
-As evidências dos testes estão disponíveis no diretório:
+Foram realizados testes do fluxo de processamento de áudio e da validação de requisições inválidas.
+
+As evidências estão disponíveis no diretório:
 
 docs/evidencias/
 
-# 1. Teste com áudio válido
+Arquivos:
 
-Demonstra o envio do arquivo de áudio para o endpoint.
+- 01-teste-audio-valido.jpg — envio e processamento do áudio.
+- 02-resposta-audio-gerada.jpg — geração da resposta em áudio.
+- 03-resposta-http-200.jpg — processamento bem-sucedido com resposta HTTP 200.
+- 04-teste-415.png — validação do tipo de mídia com retorno HTTP 415.
 
-# 2. Resposta de áudio gerada
+---
 
-Demonstra a geração do arquivo resposta.mp3.
+## Tecnologias
 
-# 3. Resposta HTTP 200
+- Java
+- Spring Boot
+- Spring AI
+- OpenAI API
+- Gradle
+- JPA / Hibernate
+- MySQL
+- Docker / Docker Compose
+- REST API
+- Git / GitHub
 
-Demonstra o processamento bem-sucedido da requisição e o retorno do áudio:
+### Conceitos aplicados
 
-HTTP/1.1 200
-Content-Type: audio/mp3
+- Arquitetura em camadas
+- Domain-Driven Design (DDD)
+- Clean Architecture
+- Use Cases
+- Repository Pattern
+- Tool Calling
+- Speech-to-Text
+- Text-to-Speech
+- Validação de entrada
+- Tratamento de erros HTTP
 
-# 4. Validação HTTP 415
+---
 
-Demonstra a rejeição de uma requisição enviada com tipo de conteúdo incompatível.
+## Endpoint principal
 
-Configuração
+### Processamento de transação por áudio
 
-A aplicação utiliza uma variável de ambiente para armazenar a chave da API da OpenAI.
+POST /transactions/ai
 
-Windows PowerShell
-$env:OPENAI_API_KEY="sua_chave_aqui"
-Linux / macOS
-export OPENAI_API_KEY="sua_chave_aqui"
+Content-Type: multipart/form-data
 
-A chave da API não deve ser armazenada diretamente no código ou enviada ao GitHub.
+Parâmetro: file
 
-Executando o projeto
+Exemplo utilizando curl:
 
-Clone o repositório:
+curl -X POST -F "file=@gasto.mp3.m4a" http://localhost:8080/transactions/ai -o resposta.mp3
 
-git clone <URL_DO_REPOSITORIO>
+O endpoint recebe o áudio, realiza a transcrição, utiliza a Inteligência Artificial para interpretar a solicitação e retorna a resposta processada em formato de áudio.
 
-Entre no diretório:
+O arquivo resposta.mp3 é gerado localmente após o processamento.
 
-cd spring-ai-audio-budgeting-api
+Os arquivos de áudio utilizados nos testes não fazem parte do repositório.
+
+---
+
+## Outros endpoints
+
+### Criar transação
+
+POST /transactions
+
+### Listar transações por categoria
+
+GET /transactions/{category}
+
+---
+
+## Como executar
+
+### Pré-requisitos
+
+- Java
+- Docker Desktop
+- Git
+- Chave de API da OpenAI
+
+### Windows PowerShell
 
 Configure a variável de ambiente:
 
-OPENAI_API_KEY
+$env:OPENAI_API_KEY="sua_chave_aqui"
 
-Inicie a aplicação.
+### Linux/macOS
 
-Linux / macOS
-./gradlew bootRun
-Windows
+Configure a variável de ambiente:
+
+export OPENAI_API_KEY="sua_chave_aqui"
+
+Nunca coloque sua chave da OpenAI diretamente no código ou no GitHub.
+
+### Executar a aplicação - Windows
+
 .\gradlew.bat bootRun
-Testando a API
 
-Com a aplicação em execução:
+### Executar a aplicação - Linux/macOS
 
-curl.exe -X POST `
-  -F "file=@gasto.mp3.m4a" `
-  http://localhost:8080/transactions/ai `
-  -o resposta.mp3
+./gradlew bootRun
 
-Após o processamento, o arquivo:
+### Executar os testes - Windows
 
-resposta.mp3
+.\gradlew.bat test
 
-será gerado localmente.
+### Executar os testes - Linux/macOS
 
-Os arquivos de áudio utilizados durante os testes são ignorados pelo .gitignore e não são enviados ao repositório.
+./gradlew test
 
-Principais conceitos de Spring AI utilizados
-TranscriptionModel
-ChatClient
-Tool Calling
-TextToSpeechModel
-integração com OpenAI
-processamento de áudio
-integração de IA com casos de uso da aplicação
-Documentação
-Spring AI
-ChatClient
-Tools
-Audio Transcriptions
-Audio Speech
-Aprendizados
+---
 
-Este projeto permitiu aplicar conceitos de:
+## Estrutura
 
-desenvolvimento de APIs REST;
-arquitetura em camadas;
-separação entre domínio, aplicação e infraestrutura;
-integração de Inteligência Artificial em uma aplicação backend;
-Speech-to-Text;
-processamento de linguagem natural;
-Tool Calling;
-Text-to-Speech;
-tratamento de erros HTTP;
-integração com serviços externos;
-configuração segura de credenciais;
-testes de API utilizando curl.
+spring-ai-audio-budgeting-api
+
+├── docs
+│   └── evidencias
+│       ├── 01-teste-audio-valido.jpg
+│       ├── 02-resposta-audio-gerada.jpg
+│       ├── 03-resposta-http-200.jpg
+│       └── 04-teste-415.png
+│
+├── gradle
+│   └── wrapper
+│
+├── src
+│   ├── main
+│   │   ├── java
+│   │   └── resources
+│   └── test
+│
+├── .gitignore
+├── build.gradle
+├── compose.yml
+├── gradlew
+├── gradlew.bat
+├── README.md
+├── requests.http
+└── settings.gradle
+
+---
+
+## Documentação
+
+- Spring AI Reference:
+  https://docs.spring.io/spring-ai/reference/
+
+- ChatClient:
+  https://docs.spring.io/spring-ai/reference/api/chatclient.html
+
+- Tools / Tool Calling:
+  https://docs.spring.io/spring-ai/reference/api/tools.html
+
+- Audio Transcriptions:
+  https://docs.spring.io/spring-ai/reference/api/audio/transcriptions.html
+
+- Audio Speech:
+  https://docs.spring.io/spring-ai/reference/api/audio/speech.html
+
+---
+
+## Contexto
+
+Projeto desenvolvido durante o Bootcamp Santander 1º Semestre de 2026, no desafio final do módulo de Spring AI.
+
+O projeto teve como foco a integração de recursos de Inteligência Artificial em uma API backend, utilizando processamento de voz, Tool Calling e geração de áudio, além da implementação de validações para tornar o endpoint mais robusto.
+
+---
+
+## Autora
+
+Juliane Vaz
+
+Desenvolvedora Back-End | Java | C#/.NET | Python
+
+GitHub:
+https://github.com/JullyVaz
+
